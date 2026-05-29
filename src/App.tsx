@@ -56,6 +56,28 @@ export default function App() {
   const [fontSize, setFontSize] = useState(28);
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
+  const [scale, setScale] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      if (width < 768) {
+        // A4 page-container has padding/margins of 32px
+        // The target width of A4 container is 210mm (which is ~794px)
+        const targetWidth = 794;
+        const availableWidth = width - 32;
+        setScale(Math.min(availableWidth / targetWidth, 1));
+      } else {
+        setScale(1);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const t = translations[lang];
 
@@ -64,11 +86,21 @@ export default function App() {
     const savedShopName = localStorage.getItem('appShopName');
     const savedProducts = localStorage.getItem('appProducts');
     const savedFontSize = localStorage.getItem('appFontSize');
+    const savedNewName = localStorage.getItem('appNewName');
+    const savedNewPrice = localStorage.getItem('appNewPrice');
 
     if (savedLang) setLang(savedLang as 'th' | 'en');
     if (savedShopName) setShopName(savedShopName);
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
     if (savedFontSize) setFontSize(Number(savedFontSize));
+    if (savedNewName) setNewName(savedNewName);
+    if (savedNewPrice) setNewPrice(savedNewPrice);
+    if (savedProducts) {
+      try {
+        setProducts(JSON.parse(savedProducts));
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -76,7 +108,9 @@ export default function App() {
     localStorage.setItem('appShopName', shopName);
     localStorage.setItem('appProducts', JSON.stringify(products));
     localStorage.setItem('appFontSize', fontSize.toString());
-  }, [lang, shopName, products, fontSize]);
+    localStorage.setItem('appNewName', newName);
+    localStorage.setItem('appNewPrice', newPrice);
+  }, [lang, shopName, products, fontSize, newName, newPrice]);
 
   const sanitize = (html: string) => {
     return DOMPurify.sanitize(html, { ALLOWED_TAGS: [] }); // text only
@@ -124,7 +158,7 @@ export default function App() {
       testDiv.style.height = '297mm';
       testDiv.style.visibility = 'hidden';
       document.body.appendChild(testDiv);
-      const pageHeightLimit = testDiv.clientHeight - 40; // subtract padding/margins
+      const pageHeightLimit = testDiv.clientHeight - 90; // subtract padding/margins and add safety buffer
       document.body.removeChild(testDiv);
 
       const header = measuringDiv.querySelector('.measuring-header');
@@ -173,6 +207,7 @@ export default function App() {
     const elements = document.querySelectorAll('.page-container');
     if (elements.length === 0) return;
     try {
+      await document.fonts.ready;
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i] as HTMLElement;
         const canvas = await html2canvas(element, {
@@ -199,6 +234,7 @@ export default function App() {
     const elements = document.querySelectorAll('.page-container');
     if (elements.length === 0) return;
     try {
+      await document.fonts.ready;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const pageHeight = 297;
@@ -223,209 +259,235 @@ export default function App() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row font-sans">
-      {/* Control Panel */}
-      <div className="w-full md:w-1/3 bg-white shadow-lg p-6 flex flex-col no-print h-auto md:h-screen overflow-y-auto border-r border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-thai-blue">Thai Helps Thai Plus</h1>
-          <button
-            onClick={() => setLang(lang === 'th' ? 'en' : 'th')}
-            className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
-          >
-            <Globe size={16} />
-            {lang.toUpperCase()}
-          </button>
-        </div>
+  const renderTopControls = () => (
+    <>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-thai-blue">Thai Helps Thai Plus</h1>
+        <button
+          onClick={() => setLang(lang === 'th' ? 'en' : 'th')}
+          className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
+        >
+          <Globe size={16} />
+          {lang.toUpperCase()}
+        </button>
+      </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t.shopName}</label>
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t.shopName}</label>
+        <input
+          type="text"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-thai-blue"
+          value={shopName}
+          onChange={(e) => setShopName(e.target.value)}
+          placeholder={t.shopName}
+        />
+      </div>
+
+      <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+        <h2 className="text-lg font-semibold mb-3 text-thai-blue">{t.add}</h2>
+        <form onSubmit={handleAddProduct} className="flex flex-col gap-3">
           <input
             type="text"
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-thai-blue"
-            value={shopName}
-            onChange={(e) => setShopName(e.target.value)}
-            placeholder={t.shopName}
+            placeholder={t.productName}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
           />
-        </div>
-
-        <div className="mb-6 bg-blue-50 p-4 rounded-lg">
-          <h2 className="text-lg font-semibold mb-3 text-thai-blue">{t.add}</h2>
-          <form onSubmit={handleAddProduct} className="flex flex-col gap-3">
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-thai-blue"
-              placeholder={t.productName}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-thai-blue"
-              placeholder={t.fullPrice}
-              value={newPrice}
-              onChange={(e) => setNewPrice(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="bg-thai-blue text-white rounded-md px-4 py-2 hover:bg-blue-900 transition flex items-center justify-center gap-2 font-medium"
-            >
-              <Plus size={18} /> {t.add}
-            </button>
-          </form>
-        </div>
-
-        <div className="mb-6 flex-1 overflow-y-auto min-h-[150px]">
-          <h3 className="text-md font-semibold mb-2 text-gray-700">Product List</h3>
-          {products.length === 0 ? (
-            <p className="text-gray-500 text-sm italic">{t.noProducts}</p>
-          ) : (
-            <ul className="space-y-2">
-              {products.map(p => (
-                <li key={p.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded border border-gray-200">
-                  <span className="truncate flex-1 mr-2">{p.name} ({formatMoney(p.price)})</span>
-                  <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:text-red-700 p-1" title={t.delete}>
-                    <Trash2 size={16} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mb-6">
-          <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-gray-700 mb-1">
-            Print Font Size: {fontSize}px
-          </label>
           <input
-            id="fontSizeSlider"
-            type="range"
-            min="16" max="48"
-            value={fontSize}
-            onChange={(e) => setFontSize(Number(e.target.value))}
-            className="w-full accent-thai-blue"
-            title="Print Font Size"
+            type="number"
+            min="0"
+            step="0.01"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-thai-blue"
+            placeholder={t.fullPrice}
+            value={newPrice}
+            onChange={(e) => setNewPrice(e.target.value)}
           />
-        </div>
-
-        <div className="flex flex-col gap-3 mb-6">
           <button
-            onClick={handleSaveImage}
-            className="w-full bg-thai-blue text-white rounded-lg px-4 py-3 hover:bg-blue-900 transition flex items-center justify-center gap-2 font-bold text-lg shadow-md"
+            type="submit"
+            className="bg-thai-blue text-white rounded-md px-4 py-2 hover:bg-blue-900 transition flex items-center justify-center gap-2 font-medium"
           >
-            <Download size={20} /> {t.saveImage}
+            <Plus size={18} /> {t.add}
           </button>
-
-          <button
-            onClick={handleSavePDF}
-            className="w-full bg-thai-red text-white rounded-lg px-4 py-3 hover:bg-red-700 transition flex items-center justify-center gap-2 font-bold text-lg shadow-md"
-          >
-            <FileText size={20} /> {t.savePDF}
-          </button>
-        </div>
-
-        {/* Hardcoded Creator Footer */}
-        <div className="mt-auto pt-4 border-t border-gray-200 text-center text-sm text-gray-600 pb-2 shrink-0">
-          <p className="mb-2 font-medium">{t.creatorText}</p>
-          <div className="flex justify-center mt-1">
-            <a
-              href="https://promptpay.io/0827254545" // แทนที่ด้วยเบอร์พร้อมเพย์ของคุณ
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-[#003D6B] text-white font-semibold px-5 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
-            >
-              💙 {t.promptPay}
-            </a>
-          </div>
-        </div>
+        </form>
       </div>
 
+      <div className="flex-1 overflow-y-auto min-h-[150px] md:min-h-0">
+        <h3 className="text-md font-semibold mb-2 text-gray-700">Product List</h3>
+        {products.length === 0 ? (
+          <p className="text-gray-500 text-sm italic">{t.noProducts}</p>
+        ) : (
+          <ul className="space-y-2">
+            {products.map(p => (
+              <li key={p.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded border border-gray-200">
+                <span className="truncate flex-1 mr-2">{p.name} ({formatMoney(p.price)})</span>
+                <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:text-red-700 p-1" title={t.delete}>
+                  <Trash2 size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
+  );
+
+  const renderBottomControls = () => (
+    <>
+      <div className="mb-6">
+        <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-gray-700 mb-1">
+          Print Font Size: {fontSize}px
+        </label>
+        <input
+          id="fontSizeSlider"
+          type="range"
+          min="16" max="48"
+          value={fontSize}
+          onChange={(e) => setFontSize(Number(e.target.value))}
+          className="w-full accent-thai-blue"
+          title="Print Font Size"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 mb-6">
+        <button
+          onClick={handleSaveImage}
+          className="w-full bg-thai-blue text-white rounded-lg px-4 py-3 hover:bg-blue-900 transition flex items-center justify-center gap-2 font-bold text-lg shadow-md"
+        >
+          <Download size={20} /> {t.saveImage}
+        </button>
+
+        <button
+          onClick={handleSavePDF}
+          className="w-full bg-thai-red text-white rounded-lg px-4 py-3 hover:bg-red-700 transition flex items-center justify-center gap-2 font-bold text-lg shadow-md"
+        >
+          <FileText size={20} /> {t.savePDF}
+        </button>
+      </div>
+
+      {/* Hardcoded Creator Footer */}
+      <div className="pt-4 border-t border-gray-200 text-center text-sm text-gray-600 pb-2 shrink-0">
+        <p className="mb-2 font-medium">{t.creatorText}</p>
+        <div className="flex justify-center mt-1">
+          <a
+            href="https://promptpay.io/0997854459"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-[#003D6B] text-white font-semibold px-5 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+          >
+            💙 {t.promptPay}
+          </a>
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row font-sans">
+      {!isMobile ? (
+        /* Control Panel (Desktop Sidebar) */
+        <div className="w-full md:w-1/3 bg-white shadow-lg p-6 flex flex-col no-print h-auto md:h-screen overflow-y-auto border-r border-gray-200">
+          {renderTopControls()}
+          <div className="mt-auto md:mt-6 pt-6 border-t border-gray-100">
+            {renderBottomControls()}
+          </div>
+        </div>
+      ) : (
+        /* Control Panel (Mobile Top Block) */
+        <div className="w-full bg-white shadow-md p-6 flex flex-col border-b border-gray-200 no-print">
+          {renderTopControls()}
+        </div>
+      )}
+
       {/* Preview Panel / Print Area */}
-      <div className="w-full md:w-2/3 p-4 md:p-8 flex flex-col items-center gap-8 overflow-y-auto bg-gray-200 print-area">
+      <div className="w-full md:w-2/3 p-4 md:p-8 flex flex-col items-center gap-8 overflow-y-auto bg-gray-200 print-area order-2 md:order-none">
         {productPages.map((pageProducts, pageIndex) => (
           <div
             key={pageIndex}
-            className="bg-white shadow-xl p-8 print:shadow-none print:p-0 w-full max-w-[210mm] min-h-[297mm] print:min-h-[297mm] print:w-full flex flex-col justify-between print:break-after-page page-container"
-            style={{ fontSize: `${fontSize}px` }}
+            className="flex justify-center w-full page-wrapper"
+            style={{
+              height: scale < 1 ? `${297 * 3.779 * scale}px` : 'auto',
+              overflow: 'hidden'
+            }}
           >
-            <div>
-              {/* Header (Only on Page 1) */}
-              {pageIndex === 0 ? (
-                <div className="flex justify-between items-start mb-6 border-b-4 border-thai-blue pb-4">
-                  <div className="flex items-end gap-3 shrink-0">
-                    {/* Note: The user should place their logo as logo.png or logo.jpg in the public folder */}
-                    <img src="logo.png" alt="ไทยช่วยไทย" className="h-24 object-contain print:h-20" onError={(e) => {
-                      // Fallback if image not found
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }} />
-                    <h1 className="hidden text-[2em] font-extrabold text-thai-blue print:text-black">ไทยช่วยไทย</h1>
-                    <span className="text-[1.8em] font-extrabold text-thai-blue print:text-black pb-1"></span>
-                  </div>
-                  {shopName && (
-                    <div className="bg-thai-blue text-white px-6 py-2 rounded-lg print:bg-gray-200 print:text-black print:border-2 print:border-gray-800 max-w-[55%] break-words">
-                      <h2 className={`font-bold line-clamp-2 whitespace-pre-wrap ${shopName.length > 25 ? 'text-[0.8em]' : shopName.length > 15 ? 'text-[1.0em]' : 'text-[1.3em]'}`}>
-                        ร้าน: {sanitize(shopName)}
-                      </h2>
+            <div
+              className="bg-white shadow-xl p-8 print:shadow-none print:p-0 w-[210mm] min-h-[297mm] print:min-h-[297mm] flex flex-col justify-between print:break-after-page page-container origin-top shrink-0"
+              style={{
+                fontSize: `${fontSize}px`,
+                transform: scale < 1 ? `scale(${scale})` : 'none',
+              }}
+            >
+              <div>
+                {/* Header (Only on Page 1) */}
+                {pageIndex === 0 ? (
+                  <div className="flex justify-between items-start mb-6 border-b-4 border-thai-blue pb-4">
+                    <div className="flex items-end gap-3 shrink-0">
+                      {/* Note: The user should place their logo as logo.png or logo.jpg in the public folder */}
+                      <img src="logo.png" alt="ไทยช่วยไทย" className="h-24 object-contain print:h-20" onError={(e) => {
+                        // Fallback if image not found
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }} />
+                      <h1 className="hidden text-[2em] font-extrabold text-thai-blue print:text-black">ไทยช่วยไทย</h1>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex justify-between items-center mb-6 border-b-2 border-thai-blue pb-2">
-                  <span className="text-[1em] font-bold text-thai-blue">ร้าน: {sanitize(shopName)} (ต่อ)</span>
-                  <span className="text-[0.8em] text-gray-500">หน้า {pageIndex + 1}/{productPages.length}</span>
-                </div>
-              )}
+                    {shopName && (
+                      <div className="bg-thai-blue text-white px-6 py-3 rounded-lg print:bg-gray-200 print:text-black print:border-2 print:border-gray-800 max-w-[55%] break-words overflow-visible flex items-center min-h-[3.5em]">
+                        <h2 className={`font-bold whitespace-pre-wrap leading-snug w-full ${shopName.length > 25 ? 'text-[0.8em]' : shopName.length > 15 ? 'text-[1.0em]' : 'text-[1.3em]'}`}>
+                          ร้าน: {sanitize(shopName)}
+                        </h2>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center mb-6 border-b-2 border-thai-blue pb-2">
+                    <span className="text-[1em] font-bold text-thai-blue">ร้าน: {sanitize(shopName)} (ต่อ)</span>
+                    <span className="text-[0.8em] text-gray-500">หน้า {pageIndex + 1}/{productPages.length}</span>
+                  </div>
+                )}
 
-              {/* Table */}
-              <table className="w-full border-collapse border-2 border-gray-800">
-                <thead>
-                  <tr className="bg-thai-blue text-white print:bg-gray-200 print:text-black">
-                    <th className="border-2 border-gray-800 p-3 text-left w-2/5">{t.product}</th>
-                    <th className="border-2 border-gray-800 p-3 text-right w-1/5">{t.fullPrice}</th>
-                    <th className="border-2 border-gray-800 p-3 text-right text-yellow-300 print:text-gray-800 w-1/5">{t.govPays}</th>
-                    <th className="border-2 border-gray-800 p-3 text-right text-green-300 print:text-black w-1/5">{t.youPay}</th>
-                  </tr>
-                </thead>
-                <tbody>
+                {/* Table */}
+                <div className="w-full border-2 border-gray-800 flex flex-col font-bold">
+                  {/* Header Row */}
+                  <div className="bg-thai-blue text-white flex flex-row border-b-2 border-gray-800 text-[0.9em] print:bg-gray-200 print:text-black">
+                    <div className="w-[40%] border-r-2 border-gray-800 px-4 py-3 text-left">{t.product}</div>
+                    <div className="w-[20%] border-r-2 border-gray-800 px-1.5 py-3 text-right">{t.fullPrice}</div>
+                    <div className="w-[20%] border-r-2 border-gray-800 px-1.5 py-3 text-right text-yellow-300 print:text-gray-800">{t.govPays}</div>
+                    <div className="w-[20%] px-1.5 py-3 text-right text-green-300 print:text-black">{t.youPay}</div>
+                  </div>
+
+                  {/* Data Rows */}
                   {pageProducts.map(p => {
                     const govPays = Math.min(p.price * 0.60, 200);
                     const customerPays = p.price - govPays;
                     return (
-                      <tr key={p.id} className="text-gray-900 font-bold">
-                        <td className="border-2 border-gray-800 p-3 bg-gray-50 print:bg-white">{p.name}</td>
-                        <td className="border-2 border-gray-800 p-3 text-right bg-gray-50 print:bg-white text-thai-blue print:text-thai-blue">
-                          {formatMoney(p.price)}
-                        </td>
-                        <td className="border-2 border-gray-800 p-3 text-right text-thai-red bg-red-50 print:bg-white print:text-thai-red">
-                          -{formatMoney(govPays)}
-                        </td>
-                        <td className="border-2 border-gray-800 p-3 text-right text-green-700 bg-green-50 print:bg-white print:text-green-700 text-[1.2em]">
-                          {formatMoney(customerPays)}
-                        </td>
-                      </tr>
+                      <div key={p.id} className="flex flex-row border-b-2 border-gray-800 last:border-b-0 text-gray-900 text-[1em]">
+                        <div className="w-[40%] border-r-2 border-gray-800 bg-gray-50 print:bg-white px-4 py-3 text-left whitespace-pre-wrap break-words">{p.name}</div>
+                        <div className="w-[20%] border-r-2 border-gray-800 bg-gray-50 print:bg-white px-1.5 py-3 text-right text-thai-blue text-[0.88em]">{formatMoney(p.price)}</div>
+                        <div className="w-[20%] border-r-2 border-gray-800 bg-red-50 print:bg-white px-1.5 py-3 text-right text-thai-red text-[0.88em]">-{formatMoney(govPays)}</div>
+                        <div className="w-[20%] bg-green-50 print:bg-white px-1.5 py-3 text-right text-green-700 text-[0.88em]">{formatMoney(customerPays)}</div>
+                      </div>
                     );
                   })}
                   {pageProducts.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="border-2 border-gray-800 p-6 text-center text-gray-400 italic font-normal">
-                        {t.noProducts}
-                      </td>
-                    </tr>
+                    <div className="p-6 text-center text-gray-400 italic font-normal">{t.noProducts}</div>
                   )}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
 
-            <div className="mt-4 flex justify-between items-center text-[0.6em] text-gray-500 font-medium">
-              <div>{t.capNote}</div>
-              {productPages.length > 1 && <div>หน้า {pageIndex + 1} จาก {productPages.length}</div>}
+              <div className="mt-4 flex justify-between items-center text-[0.6em] text-gray-500 font-medium">
+                <div>{t.capNote}</div>
+                {productPages.length > 1 && <div>หน้า {pageIndex + 1} จาก {productPages.length}</div>}
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {isMobile && (
+        /* Control Panel (Mobile Bottom Block) */
+        <div className="w-full bg-white shadow-md p-6 flex flex-col border-t border-gray-200 no-print">
+          {renderBottomControls()}
+        </div>
+      )}
 
       {/* Hidden measuring container */}
       <div id="measuring-container" className="absolute opacity-0 pointer-events-none" style={{ width: '210mm', fontSize: `${fontSize}px`, left: '-9999px', top: '0' }}>
@@ -436,40 +498,38 @@ export default function App() {
               e.currentTarget.nextElementSibling?.classList.remove('hidden');
             }} />
             <h1 className="hidden text-[2em] font-extrabold text-thai-blue">ไทยช่วยไทย</h1>
-            <span className="text-[1.8em] font-extrabold text-thai-blue pb-1"></span>
           </div>
           {shopName && (
-            <div className="bg-thai-blue text-white px-6 py-2 rounded-lg max-w-[55%] break-words">
-              <h2 className={`font-bold line-clamp-2 whitespace-pre-wrap ${shopName.length > 25 ? 'text-[0.8em]' : shopName.length > 15 ? 'text-[1.0em]' : 'text-[1.3em]'}`}>
+            <div className="bg-thai-blue text-white px-6 py-3 rounded-lg max-w-[55%] break-words overflow-visible flex items-center min-h-[3.5em]">
+              <h2 className={`font-bold whitespace-pre-wrap leading-snug w-full ${shopName.length > 25 ? 'text-[0.8em]' : shopName.length > 15 ? 'text-[1.0em]' : 'text-[1.3em]'}`}>
                 ร้าน: {sanitize(shopName)}
               </h2>
             </div>
           )}
         </div>
-        <table className="w-full border-collapse border-2 border-gray-800">
-          <thead>
-            <tr className="bg-thai-blue text-white">
-              <th className="border-2 border-gray-800 p-3 text-left w-2/5">{t.product}</th>
-              <th className="border-2 border-gray-800 p-3 text-right w-1/5">{t.fullPrice}</th>
-              <th className="border-2 border-gray-800 p-3 text-right w-1/5">{t.govPays}</th>
-              <th className="border-2 border-gray-800 p-3 text-right w-1/5">{t.youPay}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(p => {
-              const govPays = Math.min(p.price * 0.60, 200);
-              const customerPays = p.price - govPays;
-              return (
-                <tr key={p.id} className="measuring-row text-gray-900 font-bold">
-                  <td className="border-2 border-gray-800 p-3 bg-gray-50">{p.name}</td>
-                  <td className="border-2 border-gray-800 p-3 text-right bg-gray-50 text-thai-blue">{formatMoney(p.price)}</td>
-                  <td className="border-2 border-gray-800 p-3 text-right text-thai-red bg-red-50">-{formatMoney(govPays)}</td>
-                  <td className="border-2 border-gray-800 p-3 text-right text-green-700 bg-green-50 text-[1.2em]">{formatMoney(customerPays)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="w-full border-2 border-gray-800 flex flex-col font-bold">
+          {/* Header Row */}
+          <div className="bg-thai-blue text-white flex flex-row border-b-2 border-gray-800 text-[0.9em]">
+            <div className="w-[40%] border-r-2 border-gray-800 px-4 py-3 text-left">{t.product}</div>
+            <div className="w-[20%] border-r-2 border-gray-800 px-1.5 py-3 text-right">{t.fullPrice}</div>
+            <div className="w-[20%] border-r-2 border-gray-800 px-1.5 py-3 text-right">{t.govPays}</div>
+            <div className="w-[20%] px-1.5 py-3 text-right">{t.youPay}</div>
+          </div>
+
+          {/* Data Rows */}
+          {products.map(p => {
+            const govPays = Math.min(p.price * 0.60, 200);
+            const customerPays = p.price - govPays;
+            return (
+              <div key={p.id} className="measuring-row flex flex-row border-b-2 border-gray-800 last:border-b-0 text-gray-900">
+                <div className="w-[40%] border-r-2 border-gray-800 bg-gray-50 px-4 py-3 text-left whitespace-pre-wrap break-words">{p.name}</div>
+                <div className="w-[20%] border-r-2 border-gray-800 bg-gray-50 px-1.5 py-3 text-right text-thai-blue text-[0.88em]">{formatMoney(p.price)}</div>
+                <div className="w-[20%] border-r-2 border-gray-800 bg-red-50 px-1.5 py-3 text-right text-thai-red text-[0.88em]">-{formatMoney(govPays)}</div>
+                <div className="w-[20%] bg-green-50 px-1.5 py-3 text-right text-green-700 text-[0.88em]">{formatMoney(customerPays)}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

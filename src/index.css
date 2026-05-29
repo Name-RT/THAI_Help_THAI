@@ -1,6 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  font-family: 'Sarabun', sans-serif !important;
+}
 
 @media print {
   @page {
@@ -49,15 +55,22 @@
   thead {
     display: table-header-group;
   }
+
+  .page-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
 }
 
 @media (max-width: 768px) {
   .print-area {
     padding: 1rem !important;
-    overflow-x: auto !important;
+    overflow-x: hidden !important;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    width: 100% !important;
   }
   .page-container {
     min-width: 210mm !important; /* Locks A4 layout width perfectly on mobile screens */
