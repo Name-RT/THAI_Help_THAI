@@ -23,8 +23,9 @@ const translations = {
     govPays: 'รัฐจ่าย',
     youPay: 'ลูกค้าจ่าย',
     capNote: '* รัฐช่วยจ่ายสูงสุด 200 บาท/วัน\n หรือ ราคาเต็ม 333 บาท/วัน',
-    creatorText: 'สร้างสรรค์โดย ฅนไทย-ไฟ-ลน เพื่อช่วยเหลือพ่อค้าแม่ค้าชาวไทย',
-    buyMeCoffee: 'สนับสนุนเพื่อเป็นกำลังใจให้ผู้พัฒนา',
+    creatorText: 'สร้างสรรค์โดย คนไทย เพื่อช่วยเหลือพ่อค้าแม่ค้าชาวไทย',
+    buyMeCoffee: 'สนับสนุนผู้พัฒนา',
+    promptPay: 'พร้อมเพย์',
     noProducts: 'ยังไม่มีสินค้า',
     delete: 'ลบ',
   },
@@ -40,8 +41,9 @@ const translations = {
     govPays: 'Gov Pays',
     youPay: 'You Pay',
     capNote: '* Gov pays max 200 Baht per day',
-    creatorText: 'Created by ฅนไทย-ไฟ-ลน to help Thai sellers',
-    buyMeCoffee: 'Buy Me a Coffee',
+    creatorText: 'Created by คนไทย to help Thai sellers',
+    buyMeCoffee: 'Support Developer',
+    promptPay: 'PromptPay',
     noProducts: 'No products added yet',
     delete: 'Delete',
   }
@@ -327,14 +329,16 @@ export default function App() {
         {/* Hardcoded Creator Footer */}
         <div className="mt-auto pt-4 border-t border-gray-200 text-center text-sm text-gray-600 pb-2 shrink-0">
           <p className="mb-2 font-medium">{t.creatorText}</p>
-          <a
-            href="https://buymeacoffee.com/thammanoonj"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-[#FFDD00] text-black font-semibold px-4 py-2 rounded-full hover:bg-[#FFC300] transition hover:scale-105 transform duration-200"
-          >
-            ☕ {t.buyMeCoffee}
-          </a>
+          <div className="flex justify-center mt-1">
+            <a
+              href="https://promptpay.io/0827254545" // แทนที่ด้วยเบอร์พร้อมเพย์ของคุณ
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-[#003D6B] text-white font-semibold px-5 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+            >
+              💙 {t.promptPay}
+            </a>
+          </div>
         </div>
       </div>
 
@@ -350,9 +354,9 @@ export default function App() {
               {/* Header (Only on Page 1) */}
               {pageIndex === 0 ? (
                 <div className="flex justify-between items-start mb-6 border-b-4 border-thai-blue pb-4">
-                  <div className="flex items-end gap-3">
+                  <div className="flex items-end gap-3 shrink-0">
                     {/* Note: The user should place their logo as logo.png or logo.jpg in the public folder */}
-                    <img src="/logo.png" alt="ไทยช่วยไทย" className="h-24 object-contain print:h-20" onError={(e) => {
+                    <img src="logo.png" alt="ไทยช่วยไทย" className="h-24 object-contain print:h-20" onError={(e) => {
                       // Fallback if image not found
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling?.classList.remove('hidden');
@@ -361,8 +365,10 @@ export default function App() {
                     <span className="text-[1.8em] font-extrabold text-thai-blue print:text-black pb-1"></span>
                   </div>
                   {shopName && (
-                    <div className="bg-thai-blue text-white px-6 py-2 rounded-lg print:bg-gray-200 print:text-black print:border-2 print:border-gray-800">
-                      <h2 className="text-[1.3em] font-bold">ร้าน: {sanitize(shopName)}</h2>
+                    <div className="bg-thai-blue text-white px-6 py-2 rounded-lg print:bg-gray-200 print:text-black print:border-2 print:border-gray-800 max-w-[55%] break-words">
+                      <h2 className={`font-bold line-clamp-2 whitespace-pre-wrap ${shopName.length > 25 ? 'text-[0.8em]' : shopName.length > 15 ? 'text-[1.0em]' : 'text-[1.3em]'}`}>
+                        ร้าน: {sanitize(shopName)}
+                      </h2>
                     </div>
                   )}
                 </div>
@@ -424,8 +430,8 @@ export default function App() {
       {/* Hidden measuring container */}
       <div id="measuring-container" className="absolute opacity-0 pointer-events-none" style={{ width: '210mm', fontSize: `${fontSize}px`, left: '-9999px', top: '0' }}>
         <div className="measuring-header flex justify-between items-start mb-6 border-b-4 border-thai-blue pb-4">
-          <div className="flex items-end gap-3">
-            <img src="/logo.png" alt="ไทยช่วยไทย" className="h-24 object-contain" onError={(e) => {
+          <div className="flex items-end gap-3 shrink-0">
+            <img src="logo.png" alt="ไทยช่วยไทย" className="h-24 object-contain" onError={(e) => {
               e.currentTarget.style.display = 'none';
               e.currentTarget.nextElementSibling?.classList.remove('hidden');
             }} />
@@ -433,8 +439,10 @@ export default function App() {
             <span className="text-[1.8em] font-extrabold text-thai-blue pb-1"></span>
           </div>
           {shopName && (
-            <div className="bg-thai-blue text-white px-6 py-2 rounded-lg">
-              <h2 className="text-[1.3em] font-bold">ร้าน: {sanitize(shopName)}</h2>
+            <div className="bg-thai-blue text-white px-6 py-2 rounded-lg max-w-[55%] break-words">
+              <h2 className={`font-bold line-clamp-2 whitespace-pre-wrap ${shopName.length > 25 ? 'text-[0.8em]' : shopName.length > 15 ? 'text-[1.0em]' : 'text-[1.3em]'}`}>
+                ร้าน: {sanitize(shopName)}
+              </h2>
             </div>
           )}
         </div>
