@@ -210,11 +210,20 @@ export default function App() {
       await document.fonts.ready;
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i] as HTMLElement;
+        
+        // Temporarily clear scale transform so html2canvas renders the page at normal size
+        const originalTransform = element.style.transform;
+        element.style.transform = 'none';
+
         const canvas = await html2canvas(element, {
           scale: 2,
           useCORS: true,
           backgroundColor: '#ffffff'
         });
+
+        // Restore scale transform
+        element.style.transform = originalTransform;
+
         const link = document.createElement('a');
         const pageSuffix = elements.length > 1 ? `-page-${i + 1}` : '';
         link.download = `${shopName || 'thaihelpthai'}-receipt${pageSuffix}.png`;
@@ -241,11 +250,20 @@ export default function App() {
 
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i] as HTMLElement;
+
+        // Temporarily clear scale transform so html2canvas renders the page at normal size
+        const originalTransform = element.style.transform;
+        element.style.transform = 'none';
+
         const canvas = await html2canvas(element, {
           scale: 2,
           useCORS: true,
           backgroundColor: '#ffffff'
         });
+
+        // Restore scale transform
+        element.style.transform = originalTransform;
+
         const imgData = canvas.toDataURL('image/png');
 
         if (i > 0) {
