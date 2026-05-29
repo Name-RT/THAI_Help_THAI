@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-area {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .page-container {
+    page-break-after: always;
+    break-after: page;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
+    border: none !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+}
+
+@media (max-width: 768px) {
+  .print-area {
+    padding: 1rem !important;
+    overflow-x: auto !important;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .page-container {
+    min-width: 210mm !important; /* Locks A4 layout width perfectly on mobile screens */
+  }
+}
