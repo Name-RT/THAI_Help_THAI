@@ -327,13 +327,8 @@ export default function App() {
         {/* Hardcoded Creator Footer */}
         <div className="mt-auto pt-4 border-t border-gray-200 text-center text-sm text-gray-600 pb-2 shrink-0">
           <p className="mb-2 font-medium">{t.creatorText}</p>
-          {/* 
-            เปลี่ยนลิงก์ตรงนี้ (href) เป็นกระเป๋าเงินหรือลิงก์สนับสนุนของคุณเอง เช่น:
-            - ลิงก์ Buy Me a Coffee: https://buymeacoffee.com/YOUR_USERNAME
-            - ลิงก์ PromptPay (เช่น https://promptpay.io/08xxxxxxx/100)
-          */}
           <a
-            href="https://buymeacoffee.com/"
+            href="https://buymeacoffee.com/thammanoonj"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-[#FFDD00] text-black font-semibold px-4 py-2 rounded-full hover:bg-[#FFC300] transition hover:scale-105 transform duration-200"
