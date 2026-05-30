@@ -426,8 +426,8 @@ export default function App() {
               <li>กดปุ่ม <b>จุดสามจุด (...) หรือไอคอนเว็บที่มุมขวาบนสุดของหน้าต่าง Facebook/LINE</b></li>
               <li>เลือกคำสั่ง <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> หรือ <b>"เปิดในเบราว์เซอร์ปกติ" (Open in Safari / Chrome)</b></li>
             </ol>
-            <p className="text-red-600 font-bold border-t border-amber-200 pt-2 text-[10.5px]">
-              * การสลับเบราว์เซอร์จะทำให้ข้อมูลที่กรอกไว้หาย (ไม่ย้ายตามไป) แนะนำให้กดเปิดเบราว์เซอร์ภายนอก
+            <p className="text-teal-600 font-bold border-t border-amber-200 pt-2 text-[10.5px]">
+              * ข้อมูลที่ท่านกรอกแล้วจะไม่สูญหายเมื่อสลับเบราว์เซอร์
             </p>
           </div>
         )}
@@ -955,8 +955,8 @@ export default function App() {
               </ol>
             </div>
 
-            <p className="text-[11px] text-red-600 font-bold mb-6 leading-relaxed font-sans px-2 shrink-0">
-              * การสลับเบราว์เซอร์จะทำให้ข้อมูลที่กรอกไว้หาย (ไม่ย้ายตามไป) แนะนำให้กดสลับเปิดเบราว์เซอร์ภายนอกตั้งแต่ตอนนี้เลยครับ
+            <p className="text-[11px] text-teal-600 font-bold mb-6 leading-relaxed font-sans px-2 shrink-0">
+              * ข้อมูลที่ท่านกรอกแล้วจะไม่สูญหายเมื่อสลับเบราว์เซอร์
             </p>
             
             <button
