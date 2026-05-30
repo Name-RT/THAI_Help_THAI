@@ -73,6 +73,15 @@ export default function App() {
   const [editPrice, setEditPrice] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  
+  // In-app browser workaround state
+  const [inAppImage, setInAppImage] = useState<string | null>(null);
+  const [showInAppAlert, setShowInAppAlert] = useState(false);
+
+  const isInAppBrowser = () => {
+    const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+    return /FBAN|FBAV|Line|Instagram/i.test(ua);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -265,6 +274,27 @@ export default function App() {
     if (elements.length === 0) return;
     try {
       await document.fonts.ready;
+
+      // Facebook / LINE In-App Browser Workaround
+      if (isInAppBrowser()) {
+        const element = elements[0] as HTMLElement;
+        const originalTransform = element.style.transform;
+        element.style.transform = 'none';
+
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+
+        element.style.transform = originalTransform;
+
+        const imgData = canvas.toDataURL('image/png');
+        setInAppImage(imgData);
+        setShowInAppAlert(true);
+        return;
+      }
+
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i] as HTMLElement;
 
@@ -299,6 +329,15 @@ export default function App() {
   const handleSavePDF = async () => {
     const elements = document.querySelectorAll('.page-container');
     if (elements.length === 0) return;
+
+    // Facebook / LINE In-App Browser Workaround for PDF
+    if (isInAppBrowser()) {
+      alert(lang === 'th' 
+        ? 'เบราว์เซอร์ของ Facebook/LINE ไม่รองรับการดาวน์โหลดไฟล์ PDF โดยตรง\n\nกรุณากดปุ่มเมนู (จุดสามจุด ... หรือขีดสามขีด) ที่มุมจอ แล้วเลือก "เปิดในเบราว์เซอร์อื่น" หรือ "Open in Browser" (เช่น Safari/Chrome) เพื่อบันทึกป้ายราคาแบบ PDF ครับ' 
+        : 'Facebook/LINE browser does not support direct PDF downloads.\n\nPlease tap the menu button (... or ☰) at the corner and select "Open in Browser" (like Safari or Chrome) to save.');
+      return;
+    }
+
     try {
       await document.fonts.ready;
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -588,6 +627,7 @@ export default function App() {
             key={pageIndex}
             className="flex justify-center w-full page-wrapper"
             style={{
+              width: scale < 1 ? `${794 * scale}px` : 'auto',
               height: scale < 1 ? `${297 * 3.779 * scale}px` : 'auto',
               overflow: 'hidden'
             }}
@@ -761,6 +801,48 @@ export default function App() {
               className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-semibold py-2 rounded-xl transition text-sm shadow-md"
             >
               {lang === 'th' ? 'ปิดหน้าต่าง (Close)' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showInAppAlert && inAppImage && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setShowInAppAlert(false);
+                setInAppImage(null);
+              }}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition"
+            >
+              <X size={18} />
+            </button>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">
+              {lang === 'th' ? '📌 วิธีบันทึกรูปภาพป้ายราคา' : '📌 How to Save Image'}
+            </h3>
+            <p className="text-xs text-red-500 font-semibold text-center mb-4 px-2 leading-relaxed">
+              {lang === 'th'
+                ? 'เนื่องจากคุณเปิดใน Facebook/LINE กรุณากดค้างที่รูปป้ายราคาด้านล่าง แล้วเลือก "บันทึกรูปภาพ" (Save Image) ลงในเครื่องของคุณครับ'
+                : 'Since you are inside Facebook/LINE, please LONG-PRESS the image below and select "Save Image" to download it.'}
+            </p>
+            <div className="bg-gray-50 p-2 rounded-xl border border-gray-200 mb-4 w-full flex justify-center overflow-y-auto max-h-[50vh]">
+              <img
+                src={inAppImage}
+                alt="ป้ายราคา"
+                className="w-full h-auto object-contain rounded shadow-sm cursor-pointer"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowInAppAlert(false);
+                setInAppImage(null);
+              }}
+              className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-semibold py-2.5 rounded-xl transition text-sm shadow-md"
+            >
+              {lang === 'th' ? 'เสร็จสิ้น (Done)' : 'Done'}
             </button>
           </div>
         </div>
