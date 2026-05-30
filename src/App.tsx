@@ -373,10 +373,27 @@ export default function App() {
     }
   };
 
-  const renderTopControls = () => (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-thai-blue">Thai Helps Thai Plus</h1>
+  const renderTopControls = () => {
+    const isInApp = isInAppBrowser();
+    return (
+      <>
+        {isInApp && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 leading-relaxed shadow-sm">
+            <p className="font-bold mb-2 flex items-center gap-1.5 text-[13px]">
+              <span>💡</span> คำแนะนำสำหรับผู้ใช้ Facebook / LINE
+            </p>
+            <ol className="list-decimal list-inside space-y-1.5 font-medium mb-3">
+              <li>กดปุ่ม <b>จุดสามจุด (...) หรือไอคอนเว็บที่มุมขวาบนสุดของหน้าต่าง Facebook/LINE</b></li>
+              <li>เลือกคำสั่ง <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> หรือ <b>"เปิดในเบราว์เซอร์ปกติ" (Open in Safari / Chrome)</b></li>
+            </ol>
+            <p className="text-red-600 font-bold border-t border-amber-200 pt-2 text-[10.5px]">
+              * การสลับเบราว์เซอร์จะทำให้ข้อมูลที่กรอกไว้หาย (ไม่ย้ายตามไป) แนะนำให้กดเปิดเบราว์เซอร์ภายนอก
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-thai-blue">Thai Helps Thai Plus</h1>
         <button
           onClick={() => setLang(lang === 'th' ? 'en' : 'th')}
           className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
@@ -515,6 +532,7 @@ export default function App() {
       </div>
     </>
   );
+};
 
   const renderBottomControls = () => (
     <>
@@ -783,6 +801,8 @@ export default function App() {
               type="button"
               onClick={() => setShowQrModal(false)}
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition"
+              title={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close'}
+              aria-label={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close modal'}
             >
               <X size={18} />
             </button>
@@ -831,22 +851,38 @@ export default function App() {
                 setInAppImage(null);
               }}
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition"
+              title={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close'}
+              aria-label={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close modal'}
             >
               <X size={18} />
             </button>
             <h3 className="text-lg font-bold text-gray-800 mb-1">
-              {lang === 'th' ? '📌 วิธีบันทึกรูปภาพป้ายราคา' : '📌 How to Save Image'}
+              {lang === 'th' ? '📌 บันทึกรูปภาพป้ายราคา' : '📌 Save Price Tag'}
             </h3>
-            <p className="text-xs text-red-500 font-semibold text-center mb-4 px-2 leading-relaxed animate-pulse">
+            
+            {/* Step-by-Step alternative instruction card */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800 leading-relaxed mb-4 w-full text-left font-sans shrink-0">
+              <p className="font-bold mb-1">💡 หากกดค้างที่รูปภาพแล้วไม่มีเมนูเซฟรูปขึ้นมา ให้แก้ตามนี้:</p>
+              <ol className="list-decimal list-inside space-y-1.5 font-medium mb-2">
+                <li>กดปุ่ม <b>จุดสามจุด (...) หรือไอคอนเว็บที่มุมขวาบนสุดของหน้าต่าง Facebook/LINE</b></li>
+                <li>เลือกคำสั่ง <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> หรือ <b>"เปิดในเบราว์เซอร์ปกติ" (Open in Safari / Chrome)</b></li>
+              </ol>
+              <p className="text-red-600 font-bold border-t border-amber-200 pt-1.5 text-[10.5px]">
+                * การสลับเบราว์เซอร์จะทำให้ข้อมูลที่กรอกไว้หาย (ไม่ย้ายตามไป) แนะนำให้กดเปิดเบราว์เซอร์ภายนอก
+              </p>
+            </div>
+
+            <p className="text-[11px] text-red-500 font-semibold text-center mb-3 px-2 leading-relaxed animate-pulse shrink-0">
               {lang === 'th'
-                ? 'เนื่องจากคุณเปิดใน Facebook/LINE กรุณากดค้างที่รูปป้ายราคาด้านล่าง แล้วเลือก "บันทึกรูปภาพ" (Save Image) ลงในเครื่องของคุณครับ'
-                : 'Since you are inside Facebook/LINE, please LONG-PRESS the image below and select "Save Image" to download it.'}
+                ? '👉 หรือลอง: กดค้างที่รูปป้ายราคาด้านล่างนี้ค้างไว้ 2 วินาที แล้วเลือก "บันทึกรูปภาพ" (Save Image)'
+                : '👉 Or try: LONG-PRESS the image below for 2 seconds and select "Save Image"'}
             </p>
-            <div className="bg-gray-50 p-2 rounded-xl border border-gray-200 mb-4 w-full flex justify-center overflow-y-auto max-h-[50vh]">
+            <div className="bg-gray-50 p-2 rounded-xl border border-gray-200 mb-4 w-full flex justify-center overflow-y-auto max-h-[40vh]">
               <img
                 src={inAppImage}
                 alt="ป้ายราคา"
-                className="w-full h-auto object-contain rounded shadow-sm cursor-pointer select-none"
+                className="w-full h-auto object-contain rounded shadow-sm cursor-pointer"
+                style={{ pointerEvents: 'auto', userSelect: 'auto', WebkitUserSelect: 'auto' }}
               />
             </div>
             <button
