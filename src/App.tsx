@@ -771,8 +771,14 @@ export default function App() {
       </div>
 
       {showQrModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center">
+        <div 
+          onClick={() => setShowQrModal(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-sm w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center cursor-default"
+          >
             <button
               type="button"
               onClick={() => setShowQrModal(false)}
@@ -807,8 +813,17 @@ export default function App() {
       )}
 
       {showInAppAlert && inAppImage && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center">
+        <div 
+          onClick={() => {
+            setShowInAppAlert(false);
+            setInAppImage(null);
+          }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center cursor-default"
+          >
             <button
               type="button"
               onClick={() => {
@@ -822,7 +837,7 @@ export default function App() {
             <h3 className="text-lg font-bold text-gray-800 mb-1">
               {lang === 'th' ? '📌 วิธีบันทึกรูปภาพป้ายราคา' : '📌 How to Save Image'}
             </h3>
-            <p className="text-xs text-red-500 font-semibold text-center mb-4 px-2 leading-relaxed">
+            <p className="text-xs text-red-500 font-semibold text-center mb-4 px-2 leading-relaxed animate-pulse">
               {lang === 'th'
                 ? 'เนื่องจากคุณเปิดใน Facebook/LINE กรุณากดค้างที่รูปป้ายราคาด้านล่าง แล้วเลือก "บันทึกรูปภาพ" (Save Image) ลงในเครื่องของคุณครับ'
                 : 'Since you are inside Facebook/LINE, please LONG-PRESS the image below and select "Save Image" to download it.'}
@@ -831,7 +846,7 @@ export default function App() {
               <img
                 src={inAppImage}
                 alt="ป้ายราคา"
-                className="w-full h-auto object-contain rounded shadow-sm cursor-pointer"
+                className="w-full h-auto object-contain rounded shadow-sm cursor-pointer select-none"
               />
             </div>
             <button
