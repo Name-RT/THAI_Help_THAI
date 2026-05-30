@@ -75,6 +75,7 @@ export default function App() {
   const [showQrModal, setShowQrModal] = useState(false);
   
   const [showForceBrowserOverlay, setShowForceBrowserOverlay] = useState(false);
+  const [showDownloadGuide, setShowDownloadGuide] = useState(false);
 
   const isInAppBrowser = () => {
     const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
@@ -332,9 +333,7 @@ export default function App() {
 
       // Facebook / LINE In-App Browser Workaround
       if (isInAppBrowser()) {
-        alert(lang === 'th'
-          ? '💡 แนะนำสำหรับ Facebook / LINE:\nเนื่องจากเบราว์เซอร์นี้ถูกปิดกั้นการดาวน์โหลดรูปภาพโดยตรงลงเครื่อง\n\nท่านสามารถ "ถ่ายภาพหน้าจอ (Screenshot)" ป้ายราคาพรีวิวที่แสดงอยู่ เพื่อบันทึกนำไปใช้งานได้ทันทีโดยไม่ต้องดาวน์โหลด และข้อมูลร้านค้าจะไม่สูญหายครับ!'
-          : '💡 Recommendation for Facebook / LINE:\nThis browser does not support direct downloads.\n\nPlease take a SCREENSHOT of the previewed price tag on your screen to save and use it immediately!');
+        setShowDownloadGuide(true);
         return;
       }
 
@@ -375,9 +374,7 @@ export default function App() {
 
     // Facebook / LINE In-App Browser Workaround for PDF
     if (isInAppBrowser()) {
-      alert(lang === 'th' 
-        ? 'เบราว์เซอร์ของ Facebook/LINE ไม่รองรับการดาวน์โหลดไฟล์ PDF โดยตรง\n\nกรุณากดปุ่มเมนู (จุดสามจุด ... หรือขีดสามขีด) ที่มุมจอ แล้วเลือก "เปิดในเบราว์เซอร์อื่น" หรือ "Open in Browser" (เช่น Safari/Chrome) เพื่อบันทึกป้ายราคาแบบ PDF ครับ' 
-        : 'Facebook/LINE browser does not support direct PDF downloads.\n\nPlease tap the menu button (... or ☰) at the corner and select "Open in Browser" (like Safari or Chrome) to save.');
+      setShowDownloadGuide(true);
       return;
     }
 
@@ -870,6 +867,63 @@ export default function App() {
               className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-semibold py-2 rounded-xl transition text-sm shadow-md"
             >
               {lang === 'th' ? 'ปิดหน้าต่าง (Close)' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showDownloadGuide && (
+        <div 
+          onClick={() => setShowDownloadGuide(false)}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 no-print cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-md w-full p-8 relative shadow-2xl border border-gray-100 flex flex-col items-center text-center cursor-default"
+          >
+            <button
+              type="button"
+              onClick={() => setShowDownloadGuide(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition"
+              title={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close'}
+              aria-label={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close modal'}
+            >
+              <X size={18} />
+            </button>
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-3xl mb-4 shrink-0">
+              📥
+            </div>
+            <h2 className="text-xl font-bold text-gray-950 mb-2 font-sans shrink-0">
+              {lang === 'th' ? 'กรุณาดาวน์โหลดผ่านเบราว์เซอร์ปกติ' : 'Please download via normal browser'}
+            </h2>
+            <p className="text-xs text-gray-500 mb-6 font-sans leading-relaxed shrink-0">
+              {lang === 'th' 
+                ? 'ไม่สามารถดาวน์โหลดไฟล์โดยตรงผ่านในแอป Facebook/LINE ได้ เนื่องจากติดระบบความปลอดภัย' 
+                : 'Direct downloads are not supported inside Facebook/LINE app due to security sandboxing.'}
+            </p>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-[12px] text-amber-800 leading-relaxed mb-6 w-full text-left font-sans shadow-sm shrink-0">
+              <p className="font-bold mb-2 text-center text-[13px] border-b border-amber-200 pb-1.5">
+                📲 {lang === 'th' ? 'ขั้นตอนย้ายไปเบราว์เซอร์ปกติเพื่อดาวน์โหลด:' : 'Steps to switch to regular browser:'}
+              </p>
+              <ol className="list-decimal list-inside space-y-2 font-medium">
+                <li>กดปุ่ม <b>จุดสามจุด (...) หรือไอคอนเว็บที่มุมขวาบนสุดของหน้าต่าง Facebook/LINE</b></li>
+                <li>เลือกคำสั่ง <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> หรือ <b>"เปิดในเบราว์เซอร์ปกติ" (Open in Safari / Chrome)</b></li>
+              </ol>
+            </div>
+
+            <p className="text-[11px] text-teal-600 font-bold mb-6 leading-relaxed font-sans px-2 shrink-0">
+              ⭐ {lang === 'th' 
+                ? 'ข้อมูลที่ท่านกรอกแล้วจะไม่สูญหายเมื่อสลับเบราว์เซอร์' 
+                : 'Your filled data will not be lost when switching browser.'}
+            </p>
+            
+            <button
+              type="button"
+              onClick={() => setShowDownloadGuide(false)}
+              className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-bold py-3 rounded-2xl transition text-sm shadow-md shrink-0"
+            >
+              {lang === 'th' ? 'ตกลง (OK)' : 'OK'}
             </button>
           </div>
         </div>
