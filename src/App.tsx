@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import { Plus, Trash2, Globe, FileText, Download } from 'lucide-react';
+import { Plus, Trash2, Globe, FileText, Download, Pencil, Check, X, GripVertical } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -25,9 +25,12 @@ const translations = {
     capNote: '* รัฐช่วยจ่ายสูงสุด 200 บาท/วัน\n หรือ ราคาเต็ม 333 บาท/วัน',
     creatorText: 'สร้างสรรค์โดย คนไทย เพื่อช่วยเหลือพ่อค้าแม่ค้าชาวไทย',
     buyMeCoffee: 'สนับสนุนผู้พัฒนา',
-    promptPay: 'พร้อมเพย์',
+    promptPay: 'QR พร้อมเพย์',
     noProducts: 'ยังไม่มีสินค้า',
     delete: 'ลบ',
+    edit: 'แก้ไข',
+    save: 'บันทึก',
+    cancel: 'ยกเลิก',
   },
   en: {
     language: 'Language',
@@ -43,9 +46,12 @@ const translations = {
     capNote: '* Gov pays max 200 Baht per day',
     creatorText: 'Created by คนไทย to help Thai sellers',
     buyMeCoffee: 'Support Developer',
-    promptPay: 'PromptPay',
+    promptPay: 'QR PromptPay',
     noProducts: 'No products added yet',
     delete: 'Delete',
+    edit: 'Edit',
+    save: 'Save',
+    cancel: 'Cancel',
   }
 };
 
@@ -58,6 +64,12 @@ export default function App() {
   const [newPrice, setNewPrice] = useState('');
   const [scale, setScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Edit & Drag-and-drop state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -137,6 +149,48 @@ export default function App() {
     setProducts(products.filter(p => p.id !== id));
   };
 
+  const startEdit = (product: Product) => {
+    setEditingId(product.id);
+    setEditName(product.name);
+    setEditPrice(product.price.toString());
+  };
+
+  const handleSaveEdit = (id: string) => {
+    if (!editName.trim() || !editPrice.trim()) return;
+    const priceNum = parseFloat(editPrice);
+    if (isNaN(priceNum) || priceNum <= 0) return;
+
+    setProducts(products.map(p => p.id === id ? { ...p, name: sanitize(editName.trim()), price: priceNum } : p));
+    setEditingId(null);
+    setEditName('');
+    setEditPrice('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditPrice('');
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const updated = [...products];
+    const item = updated.splice(draggedIndex, 1)[0];
+    updated.splice(index, 0, item);
+    setProducts(updated);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const formatMoney = (amount: number) => {
     return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
@@ -168,7 +222,7 @@ export default function App() {
       const thead = measuringDiv.querySelector('thead');
       const theadHeight = thead ? thead.clientHeight : 50;
 
-      const footerHeight = 40; // cap note height
+      const footerHeight = 65; // cap note + qr code footer height
 
       let currentPage: Product[] = [];
       const newPages: Product[][] = [];
@@ -210,7 +264,7 @@ export default function App() {
       await document.fonts.ready;
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i] as HTMLElement;
-        
+
         // Temporarily clear scale transform so html2canvas renders the page at normal size
         const originalTransform = element.style.transform;
         element.style.transform = 'none';
@@ -335,12 +389,83 @@ export default function App() {
           <p className="text-gray-500 text-sm italic">{t.noProducts}</p>
         ) : (
           <ul className="space-y-2">
-            {products.map(p => (
-              <li key={p.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded border border-gray-200">
-                <span className="truncate flex-1 mr-2">{p.name} ({formatMoney(p.price)})</span>
-                <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:text-red-700 p-1" title={t.delete}>
-                  <Trash2 size={16} />
-                </button>
+            {products.map((p, index) => (
+              <li
+                key={p.id}
+                draggable={editingId === null}
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`flex justify-between items-center bg-gray-50 px-3 py-2 rounded border border-gray-200 gap-2 ${draggedIndex === index ? 'opacity-50 border-thai-blue border-dashed' : ''
+                  } ${editingId === null ? 'cursor-grab active:cursor-grabbing' : ''}`}
+              >
+                {editingId === p.id ? (
+                  <div className="flex flex-col gap-2 w-full">
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-thai-blue font-sans"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder={t.productName}
+                    />
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="w-2/3 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-thai-blue font-sans"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        placeholder={t.fullPrice}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEdit(p.id)}
+                        className="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 transition"
+                        title={t.save}
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="bg-gray-400 text-white p-1.5 rounded hover:bg-gray-500 transition"
+                        title={t.cancel}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                      <div className="text-gray-400 shrink-0 cursor-grab">
+                        <GripVertical size={16} />
+                      </div>
+                      <span className="truncate text-gray-800 font-medium">
+                        {p.name} <span className="text-thai-blue text-sm font-semibold">({formatMoney(p.price)}฿)</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(p)}
+                        className="text-gray-500 hover:text-thai-blue p-1"
+                        title={t.edit}
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteProduct(p.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title={t.delete}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </>
+                )}
               </li>
             ))}
           </ul>
@@ -382,19 +507,37 @@ export default function App() {
         </button>
       </div>
 
-      {/* Hardcoded Creator Footer */}
+      {/* Creator Footer with Feedback Button */}
       <div className="pt-4 border-t border-gray-200 text-center text-sm text-gray-600 pb-2 shrink-0">
         <p className="mb-2 font-medium">{t.creatorText}</p>
-        <div className="flex justify-center mt-1">
+        <div className="flex flex-wrap justify-center gap-2 mt-1">
           <a
             href="https://promptpay.io/0997854459"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-[#003D6B] text-white font-semibold px-5 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+            className="inline-flex items-center justify-center gap-1 bg-[#003D6B] text-white font-semibold px-4 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
           >
             💙 {t.promptPay}
           </a>
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSecsjjRIQevvQX0Mn3KOIWljfkB9MTyv6Kv8J_jRPg558hx8Q/viewform?usp=publish-editor"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-1 bg-amber-500 text-white font-semibold px-4 py-2 rounded-full hover:bg-amber-600 transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+          >
+            📝 แจ้งปัญหา/เสนอแนะ
+          </a>
         </div>
+      </div>
+
+      {/* Privacy Note */}
+      <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500 leading-relaxed shrink-0">
+        <p className="flex items-center gap-1.5 font-bold text-gray-700 mb-1">
+          <span>🔒</span> นโยบายความเป็นส่วนตัว (Privacy Note)
+        </p>
+        <p>
+          ข้อมูลทั้งหมดของคุณ ไม่มีการเก็บหรืออัปโหลดไปยังเซิร์ฟเวอร์ภายนอกใดๆ
+        </p>
       </div>
     </>
   );
@@ -491,9 +634,24 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-between items-center text-[0.6em] text-gray-500 font-medium">
-                <div>{t.capNote}</div>
-                {productPages.length > 1 && <div>หน้า {pageIndex + 1} จาก {productPages.length}</div>}
+              <div
+                className="mt-4 flex justify-between items-end text-gray-500 font-medium border-t border-gray-100 pt-3"
+                style={{ fontSize: '15px' }}
+              >
+                <div className="whitespace-pre-line text-left leading-relaxed">{t.capNote}</div>
+                <div className="flex items-center gap-2 text-right shrink-0">
+                  <div className="flex flex-col items-end leading-normal">
+                    <span className="text-gray-400 font-normal" style={{ fontSize: '12px' }}>สร้างป้ายราคาไทยช่วยไทยของคุณได้ที่</span>
+                    <span className="text-thai-blue font-bold tracking-wide" style={{ fontSize: '15px' }}>bit.ly/thai_help</span>
+                  </div>
+                  <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https%3A%2F%2Fbit.ly%2Fthai_help"
+                    alt="QR Code"
+                    className="w-14 h-14 border border-gray-300 rounded p-0.5 bg-white shadow-sm shrink-0"
+                    crossOrigin="anonymous"
+                  />
+                  {productPages.length > 1 && <span className="ml-1 text-gray-400">หน้า {pageIndex + 1}/{productPages.length}</span>}
+                </div>
               </div>
             </div>
           </div>
