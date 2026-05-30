@@ -31,6 +31,7 @@ const translations = {
     edit: 'แก้ไข',
     save: 'บันทึก',
     cancel: 'ยกเลิก',
+    fontSize: 'ปรับขนาดตัวหนังสือ',
   },
   en: {
     language: 'Language',
@@ -43,7 +44,7 @@ const translations = {
     product: 'Product',
     govPays: 'Gov Pays',
     youPay: 'You Pay',
-    capNote: '* Gov pays max 200 Baht per day',
+    capNote: '* Gov pays max 200 Baht/day\n or Full price 333 Baht/day',
     creatorText: 'Created by คนไทย to help Thai sellers',
     buyMeCoffee: 'Support Developer',
     promptPay: 'QR PromptPay',
@@ -52,6 +53,7 @@ const translations = {
     edit: 'Edit',
     save: 'Save',
     cancel: 'Cancel',
+    fontSize: 'Font Size',
   }
 };
 
@@ -478,7 +480,7 @@ export default function App() {
     <>
       <div className="mb-6">
         <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-gray-700 mb-1">
-          Print Font Size: {fontSize}px
+          {t.fontSize}: {fontSize}px
         </label>
         <input
           id="fontSizeSlider"
