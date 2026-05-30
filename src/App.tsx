@@ -72,6 +72,7 @@ export default function App() {
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -509,23 +510,42 @@ export default function App() {
         </button>
       </div>
 
-      {/* Creator Footer with Feedback Button */}
+      {/* Creator Footer with Support and Feedback */}
       <div className="pt-4 border-t border-gray-200 text-center text-sm text-gray-600 pb-2 shrink-0">
-        <p className="mb-2 font-medium">{t.creatorText}</p>
-        <div className="flex flex-wrap justify-center gap-2 mt-1">
-          <a
-            href="https://promptpay.io/0997854459"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1 bg-[#003D6B] text-white font-semibold px-4 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
-          >
-            💙 {t.promptPay}
-          </a>
+        <p className="mb-1 font-semibold text-gray-700">{lang === 'th' ? 'สร้างโดย คนไทย เพื่อช่วยเหลือพ่อค้าแม่ค้าชาวไทย' : 'Created by คนไทย to help Thai sellers'}</p>
+        <p className="text-xs text-gray-500 mb-2 whitespace-pre-line">
+          {lang === 'th' 
+            ? 'สนับสนุนผู้พัฒนาได้ผ่าน QR Code หรือ PromptPay' 
+            : 'Support the developer via QR Code or PromptPay'}
+        </p>
+        <div className="flex flex-col items-center gap-2 mt-1">
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="inline-flex items-center justify-center gap-1 bg-[#003D6B] text-white font-semibold px-4 py-2 rounded-full hover:bg-[#002D4F] transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+            >
+              💙 {t.promptPay}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText('0997854459');
+                alert(lang === 'th' ? 'คัดลอกเบอร์ PromptPay 0997854459 เรียบร้อยแล้ว!' : 'PromptPay number 0997854459 copied to clipboard!');
+              }}
+              className="inline-flex items-center justify-center gap-1.5 bg-teal-600 text-white font-semibold px-4 py-2 rounded-full hover:bg-teal-700 transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+              title="คัดลอกเบอร์ PromptPay"
+            >
+              📋 {lang === 'th' ? 'คัดลอกเบอร์ 0997854459' : 'Copy PromptPay: 0997854459'}
+            </button>
+          </div>
+          
           <a
             href="https://docs.google.com/forms/d/e/1FAIpQLSecsjjRIQevvQX0Mn3KOIWljfkB9MTyv6Kv8J_jRPg558hx8Q/viewform?usp=publish-editor"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1 bg-amber-500 text-white font-semibold px-4 py-2 rounded-full hover:bg-amber-600 transition hover:scale-105 transform duration-200 text-xs shadow-sm"
+            className="inline-flex items-center justify-center gap-1 bg-amber-500 text-white font-semibold px-4 py-2 rounded-full hover:bg-amber-600 transition hover:scale-105 transform duration-200 text-xs shadow-sm mt-1"
           >
             📝 แจ้งปัญหา/เสนอแนะ
           </a>
@@ -709,6 +729,42 @@ export default function App() {
           })}
         </div>
       </div>
+
+      {showQrModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition"
+            >
+              <X size={18} />
+            </button>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">
+              {lang === 'th' ? 'QR Code พร้อมเพย์' : 'PromptPay QR Code'}
+            </h3>
+            <p className="text-xs text-gray-500 mb-4 text-center">
+              {lang === 'th' 
+                ? 'สแกนเพื่อสนับสนุนค่าน้ำชา/กาแฟ ให้แก่ผู้พัฒนาได้โดยตรงครับ' 
+                : 'Scan to support tea/coffee costs directly to the developer.'}
+            </p>
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-4 flex justify-center items-center">
+              <img
+                src="promptpay_qr.png"
+                alt="PromptPay QR Code"
+                className="w-60 h-auto object-contain rounded-lg shadow-sm"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-semibold py-2 rounded-xl transition text-sm shadow-md"
+            >
+              {lang === 'th' ? 'ปิดหน้าต่าง (Close)' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
