@@ -77,6 +77,7 @@ export default function App() {
   // In-app browser workaround state
   const [inAppImage, setInAppImage] = useState<string | null>(null);
   const [showInAppAlert, setShowInAppAlert] = useState(false);
+  const [showForceBrowserOverlay, setShowForceBrowserOverlay] = useState(false);
 
   const isInAppBrowser = () => {
     const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
@@ -106,6 +107,9 @@ export default function App() {
   const t = translations[lang];
 
   useEffect(() => {
+    if (isInAppBrowser()) {
+      setShowForceBrowserOverlay(true);
+    }
     const savedLang = localStorage.getItem('appLang');
     const savedShopName = localStorage.getItem('appShopName');
     const savedProducts = localStorage.getItem('appProducts');
@@ -894,6 +898,45 @@ export default function App() {
               className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-semibold py-2.5 rounded-xl transition text-sm shadow-md"
             >
               {lang === 'th' ? 'เสร็จสิ้น (Done)' : 'Done'}
+            </button>
+          </div>
+        </div>
+      )}
+      {showForceBrowserOverlay && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[10000] flex items-center justify-center p-4 no-print">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 relative shadow-2xl border border-gray-100 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-3xl mb-4 animate-bounce shrink-0">
+              💡
+            </div>
+            <h2 className="text-xl font-bold text-gray-950 mb-2 font-sans shrink-0">
+              {lang === 'th' ? 'แนะนำให้เปิดด้วยเบราว์เซอร์ภายนอก' : 'Open in External Browser Recommended'}
+            </h2>
+            <p className="text-xs text-gray-500 mb-6 font-sans leading-relaxed shrink-0">
+              {lang === 'th' 
+                ? 'ยินดีต้อนรับสู่ ไทยช่วยไทย พลัส! เพื่อความราบรื่นและสามารถดาวน์โหลดรูปภาพหรือ PDF ป้ายราคาลงมือถือได้อย่างสมบูรณ์แบบ' 
+                : 'Welcome to Thai Helps Thai Plus! For a smooth experience and successful price tag downloads (Image/PDF) to your mobile.'}
+            </p>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-[12px] text-amber-800 leading-relaxed mb-6 w-full text-left font-sans shadow-sm shrink-0">
+              <p className="font-bold mb-2 text-center text-[13px] border-b border-amber-200 pb-1.5">
+                📲 {lang === 'th' ? 'ขั้นตอนการเปิดเบราว์เซอร์ภายนอก:' : 'Steps to Open in External Browser:'}
+              </p>
+              <ol className="list-decimal list-inside space-y-2 font-medium">
+                <li>กดปุ่ม <b>จุดสามจุด (...) หรือไอคอนเว็บที่มุมขวาบนสุดของหน้าต่าง Facebook/LINE</b></li>
+                <li>เลือกคำสั่ง <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> หรือ <b>"เปิดในเบราว์เซอร์ปกติ" (Open in Safari / Chrome)</b></li>
+              </ol>
+            </div>
+
+            <p className="text-[11px] text-red-600 font-bold mb-6 leading-relaxed font-sans px-2 shrink-0">
+              * การสลับเบราว์เซอร์จะทำให้ข้อมูลที่กรอกไว้หาย (ไม่ย้ายตามไป) แนะนำให้กดสลับเปิดเบราว์เซอร์ภายนอกตั้งแต่ตอนนี้เลยครับ
+            </p>
+            
+            <button
+              type="button"
+              onClick={() => setShowForceBrowserOverlay(false)}
+              className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-bold py-3 rounded-2xl transition text-sm shadow-md shrink-0"
+            >
+              {lang === 'th' ? 'รับทราบ (ฉันขอกรอกข้อมูลผ่านเบราว์เซอร์นี้ต่อ)' : 'Got it (Continue in this browser)'}
             </button>
           </div>
         </div>
