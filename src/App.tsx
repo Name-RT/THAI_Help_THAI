@@ -74,14 +74,23 @@ export default function App() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
   
-  // In-app browser workaround state
-  const [inAppImage, setInAppImage] = useState<string | null>(null);
-  const [showInAppAlert, setShowInAppAlert] = useState(false);
   const [showForceBrowserOverlay, setShowForceBrowserOverlay] = useState(false);
 
   const isInAppBrowser = () => {
     const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
     return /FBAN|FBAV|Line|Instagram/i.test(ua);
+  };
+
+  const base64EncodeUnicode = (str: string) => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => {
+      return String.fromCharCode(parseInt(p1, 16));
+    }));
+  };
+
+  const base64DecodeUnicode = (str: string) => {
+    return decodeURIComponent(atob(str).split('').map((c) => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
   };
 
   useEffect(() => {
@@ -110,23 +119,52 @@ export default function App() {
     if (isInAppBrowser()) {
       setShowForceBrowserOverlay(true);
     }
-    const savedLang = localStorage.getItem('appLang');
-    const savedShopName = localStorage.getItem('appShopName');
-    const savedProducts = localStorage.getItem('appProducts');
-    const savedFontSize = localStorage.getItem('appFontSize');
-    const savedNewName = localStorage.getItem('appNewName');
-    const savedNewPrice = localStorage.getItem('appNewPrice');
 
-    if (savedLang) setLang(savedLang as 'th' | 'en');
-    if (savedShopName) setShopName(savedShopName);
-    if (savedFontSize) setFontSize(Number(savedFontSize));
-    if (savedNewName) setNewName(savedNewName);
-    if (savedNewPrice) setNewPrice(savedNewPrice);
-    if (savedProducts) {
+    // Try to restore state from URL query parameter first (browser cross-sharing)
+    const urlParams = new URLSearchParams(window.location.search);
+    const stateParam = urlParams.get('state');
+    let loadedFromUrl = false;
+
+    if (stateParam) {
       try {
-        setProducts(JSON.parse(savedProducts));
+        const decoded = base64DecodeUnicode(stateParam);
+        const parsed = JSON.parse(decoded);
+        if (parsed) {
+          if (parsed.l) setLang(parsed.l);
+          if (parsed.s !== undefined) setShopName(parsed.s);
+          if (parsed.f) setFontSize(Number(parsed.f));
+          if (parsed.p) setProducts(parsed.p);
+          loadedFromUrl = true;
+          
+          // Clear query param for clean URL
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('state');
+          window.history.replaceState(null, '', newUrl.toString());
+        }
       } catch (e) {
-        console.error(e);
+        console.error('Failed to parse URL state', e);
+      }
+    }
+
+    if (!loadedFromUrl) {
+      const savedLang = localStorage.getItem('appLang');
+      const savedShopName = localStorage.getItem('appShopName');
+      const savedProducts = localStorage.getItem('appProducts');
+      const savedFontSize = localStorage.getItem('appFontSize');
+      const savedNewName = localStorage.getItem('appNewName');
+      const savedNewPrice = localStorage.getItem('appNewPrice');
+
+      if (savedLang) setLang(savedLang as 'th' | 'en');
+      if (savedShopName) setShopName(savedShopName);
+      if (savedFontSize) setFontSize(Number(savedFontSize));
+      if (savedNewName) setNewName(savedNewName);
+      if (savedNewPrice) setNewPrice(savedNewPrice);
+      if (savedProducts) {
+        try {
+          setProducts(JSON.parse(savedProducts));
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
   }, []);
@@ -138,6 +176,19 @@ export default function App() {
     localStorage.setItem('appFontSize', fontSize.toString());
     localStorage.setItem('appNewName', newName);
     localStorage.setItem('appNewPrice', newPrice);
+
+    // Sync state to URL query parameter dynamically for browser cross-sharing
+    try {
+      const stateObj = { s: shopName, p: products, f: fontSize, l: lang };
+      const jsonStr = JSON.stringify(stateObj);
+      const b64 = base64EncodeUnicode(jsonStr);
+      
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('state', b64);
+      window.history.replaceState(null, '', newUrl.toString());
+    } catch (e) {
+      console.error('Failed to sync state to URL', e);
+    }
   }, [lang, shopName, products, fontSize, newName, newPrice]);
 
   const sanitize = (html: string) => {
@@ -281,21 +332,9 @@ export default function App() {
 
       // Facebook / LINE In-App Browser Workaround
       if (isInAppBrowser()) {
-        const element = elements[0] as HTMLElement;
-        const originalTransform = element.style.transform;
-        element.style.transform = 'none';
-
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        });
-
-        element.style.transform = originalTransform;
-
-        const imgData = canvas.toDataURL('image/png');
-        setInAppImage(imgData);
-        setShowInAppAlert(true);
+        alert(lang === 'th'
+          ? '💡 แนะนำสำหรับ Facebook / LINE:\nเนื่องจากเบราว์เซอร์นี้ถูกปิดกั้นการดาวน์โหลดรูปภาพโดยตรงลงเครื่อง\n\nท่านสามารถ "ถ่ายภาพหน้าจอ (Screenshot)" ป้ายราคาพรีวิวที่แสดงอยู่ เพื่อบันทึกนำไปใช้งานได้ทันทีโดยไม่ต้องดาวน์โหลด และข้อมูลร้านค้าจะไม่สูญหายครับ!'
+          : '💡 Recommendation for Facebook / LINE:\nThis browser does not support direct downloads.\n\nPlease take a SCREENSHOT of the previewed price tag on your screen to save and use it immediately!');
         return;
       }
 
@@ -836,72 +875,7 @@ export default function App() {
         </div>
       )}
 
-      {showInAppAlert && inAppImage && (
-        <div 
-          onClick={() => {
-            setShowInAppAlert(false);
-            setInAppImage(null);
-          }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 no-print cursor-pointer"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-2xl border border-gray-100 flex flex-col items-center cursor-default"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setShowInAppAlert(false);
-                setInAppImage(null);
-              }}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition"
-              title={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close'}
-              aria-label={lang === 'th' ? 'ปิดหน้าต่าง' : 'Close modal'}
-            >
-              <X size={18} />
-            </button>
-            <h3 className="text-lg font-bold text-gray-800 mb-1">
-              {lang === 'th' ? '📌 บันทึกรูปภาพป้ายราคา' : '📌 Save Price Tag'}
-            </h3>
-            
-            {/* Step-by-Step alternative instruction card */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800 leading-relaxed mb-4 w-full text-left font-sans shrink-0">
-              <p className="font-bold mb-1">💡 หากกดค้างที่รูปภาพแล้วไม่มีเมนูเซฟรูปขึ้นมา ให้แก้ตามนี้:</p>
-              <ol className="list-decimal list-inside space-y-1.5 font-medium mb-2">
-                <li>กดปุ่ม <b>จุดสามจุด (...) หรือไอคอนเว็บที่มุมขวาบนสุดของหน้าต่าง Facebook/LINE</b></li>
-                <li>เลือกคำสั่ง <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> หรือ <b>"เปิดในเบราว์เซอร์ปกติ" (Open in Safari / Chrome)</b></li>
-              </ol>
-              <p className="text-red-600 font-bold border-t border-amber-200 pt-1.5 text-[10.5px]">
-                * การสลับเบราว์เซอร์จะทำให้ข้อมูลที่กรอกไว้หาย (ไม่ย้ายตามไป) แนะนำให้กดเปิดเบราว์เซอร์ภายนอก
-              </p>
-            </div>
 
-            <p className="text-[11px] text-red-500 font-semibold text-center mb-3 px-2 leading-relaxed animate-pulse shrink-0">
-              {lang === 'th'
-                ? '👉 หรือลอง: กดค้างที่รูปป้ายราคาด้านล่างนี้ค้างไว้ 2 วินาที แล้วเลือก "บันทึกรูปภาพ" (Save Image)'
-                : '👉 Or try: LONG-PRESS the image below for 2 seconds and select "Save Image"'}
-            </p>
-            <div className="bg-gray-50 p-2 rounded-xl border border-gray-200 mb-4 w-full flex justify-center overflow-y-auto max-h-[40vh]">
-              <img
-                src={inAppImage}
-                alt="ป้ายราคา"
-                className="w-full h-auto object-contain rounded shadow-sm cursor-pointer"
-                style={{ pointerEvents: 'auto', userSelect: 'auto', WebkitUserSelect: 'auto' }}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowInAppAlert(false);
-                setInAppImage(null);
-              }}
-              className="w-full bg-[#003D6B] hover:bg-[#002D4F] text-white font-semibold py-2.5 rounded-xl transition text-sm shadow-md"
-            >
-              {lang === 'th' ? 'เสร็จสิ้น (Done)' : 'Done'}
-            </button>
-          </div>
-        </div>
-      )}
       {showForceBrowserOverlay && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[10000] flex items-center justify-center p-4 no-print">
           <div className="bg-white rounded-3xl max-w-md w-full p-8 relative shadow-2xl border border-gray-100 flex flex-col items-center text-center">
